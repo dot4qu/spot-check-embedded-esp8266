@@ -13,7 +13,7 @@
 #define VERSION "0.1"
 
 #include <Adafruit_NeoPixel.h>
-#include "tides_display.h"
+#include "spot_check_display.h"
 
 // TVOut library installed from forked repo that bundles the TVOut and TVoutfonts
 // libraries together instead of the messiness double-library that's in the main repo.
