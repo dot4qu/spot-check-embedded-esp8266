@@ -1,3 +1,12 @@
+# binary output folder
+build/
+
+# .sdkconfig/kconfig holds wifi and other keys
+sdkconfig*
+*.projbuild
+
+.DS_STORE
+
 # Prerequisites
 *.d
 
