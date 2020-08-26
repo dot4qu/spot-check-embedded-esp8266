@@ -3,7 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := tides
+PROJECT_NAME := spot-check-embedded
 
 include $(IDF_PATH)/make/project.mk
 
@@ -17,4 +17,4 @@ COMPONENT_LDFLAGS += -mlongcalls
 
 .PHONY: monitor
 monitor:
-	miniterm.py /dev/cu.usbserial-14140 9600
+	miniterm.py /dev/cu.usbserial-0001 9600
