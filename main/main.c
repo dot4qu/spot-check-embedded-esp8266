@@ -1,3 +1,5 @@
+#define LOG_LOCAL_LEVEL ESP_LOG_WARN
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -35,7 +37,7 @@
 #define END_LIST_TRANSMISSION_COMMAND "END_LIST%"
 
 #define RELOAD_ON_EXPIRATION true
-#define TIMER_PERIOD_MS (100)
+#define TIMER_PERIOD_MS (1000)
 
 #define URL_BASE "http://192.168.1.70/"
 #define MAX_QUERY_PARAM_LENGTH 15
@@ -213,9 +215,6 @@ void init_http() {
 
 // Does NOT start timer, must use reset_timer to start count
 void init_timer() {
-    // ESP_ERROR_CHECK(hw_timer_init(timer_expired_callback, NULL));
-    // ESP_ERROR_CHECK(hw_timer_alarm_us(TIMER_PERIOD_MS * 1000, true));
-
     // Init code adapted from the hw_timer.c hw_timer_alarm_us function
     // used for abstracting timer load and start
     ESP_ERROR_CHECK(hw_timer_init(timer_expired_callback, NULL));
@@ -268,7 +267,7 @@ int perform_request(request *request_obj, char **read_buffer) {
             strcat(req_url, param.value);
         }
 
-        esp_http_client_set_url(client, req_url);
+        ESP_ERROR_CHECK(esp_http_client_set_url(client, req_url));
         ESP_LOGI(TAG, "Setting url to %s\n", req_url);
     }
 
@@ -288,10 +287,18 @@ int perform_request(request *request_obj, char **read_buffer) {
     }
 
     int content_length = esp_http_client_get_content_length(client);
-    ESP_LOGI(TAG, "GET success! Status=%d, Content-length=%d",
-        esp_http_client_get_status_code(client),
-        content_length
-    );
+    int status = esp_http_client_get_status_code(client);
+    if (status >= 200 && status <= 299) {
+        ESP_LOGI(TAG, "GET success! Status=%d, Content-length=%d", status, content_length);
+    } else {
+        ESP_LOGI(TAG, "GET failed. Status=%d, Content-length=%d", status, content_length);
+        error = esp_http_client_close(client);
+        if (error != ESP_OK) {
+            const char *err_str = esp_err_to_name(error);
+            ESP_LOGI(TAG, "Error closing http client connection: %s", err_str);
+            return 0;
+        }
+    }
 
     int alloced_space_used = 0;
     if (content_length < MAX_READ_BUFFER_SIZE) {
@@ -303,8 +310,6 @@ int perform_request(request *request_obj, char **read_buffer) {
         int length_received = esp_http_client_read(client, *read_buffer, content_length);
         (*read_buffer)[length_received + 1] = '\0';
         alloced_space_used = length_received + 1;
-
-        ESP_LOGI(TAG, "Succesfully received %d bytes in response", length_received);
     } else {
         ESP_LOGI(TAG, "Not enough room in read buffer: buffer=%d, content=%d", MAX_READ_BUFFER_SIZE, content_length);
     }
@@ -312,10 +317,10 @@ int perform_request(request *request_obj, char **read_buffer) {
     // Close current connection but don't free http_client data and un-init with cleanup
     error = esp_http_client_close(client);
     if (error != ESP_OK) {
-        ESP_LOGI(TAG, "Error closing http client connection");
+        const char *err_str = esp_err_to_name(error);
+        ESP_LOGI(TAG, "Error closing http client connection: %s", err_str);
     }
 
-    ESP_LOGI(TAG, "returning spaced used: %d", alloced_space_used);
     return alloced_space_used;
 }
 
@@ -382,8 +387,10 @@ esp_err_t http_event_handler(esp_http_client_event_t *event) {
     return ESP_OK;
 }
 
+volatile int timer_count = 0;
 void timer_expired_callback(void *timer_args) {
-    timer_expired = true;
+    // timer_expired = true;
+    timer_count += 1;
 }
 
 void button_isr_handler(void *arg) {
@@ -490,18 +497,20 @@ int send_json_list(cJSON *list_json) {
 
     // Write our command to signal to the arduino we're about to start
     // sending a list of strings to display
-    uart_write_bytes(UART_NUM_1, START_LIST_TRANSMISSION_COMMAND, sizeof(START_LIST_TRANSMISSION_COMMAND) - 1);
+    // uart_write_bytes(UART_NUM_1, START_LIST_TRANSMISSION_COMMAND, sizeof(START_LIST_TRANSMISSION_COMMAND) - 1);
+    printf("%s\n", START_LIST_TRANSMISSION_COMMAND);
 
     // ESP_LOGI(TAG, "Sending string: %s\n", START_LIST_TRANSMISSION_COMMAND);
     cJSON *data_list_value = NULL;
     cJSON_ArrayForEach(data_list_value, list_json) {
         char *text = cJSON_GetStringValue(data_list_value);
 
-        ESP_LOGI(TAG, text);
+        // ESP_LOGI(TAG, text);
         // Write string and '$' terminator to tell arduino to store everything
         // received so far as a new array element
-        uart_write_bytes(UART_NUM_1, (const char *)text, strlen(text));
-        uart_write_bytes(UART_NUM_1, "$", 1);
+        // uart_write_bytes(UART_NUM_1, (const char *)text, strlen(text));
+        // uart_write_bytes(UART_NUM_1, "$", 1);
+        printf("%s$\n", text);
         // ESP_LOGI(TAG, text);
         cJSON_free(text);
         num_sent++;
@@ -509,7 +518,8 @@ int send_json_list(cJSON *list_json) {
 
     // Arduino knows it can stop looking for '$' terminated strings and
     // display what it's stored in its array
-    uart_write_bytes(UART_NUM_1, END_LIST_TRANSMISSION_COMMAND, sizeof(END_LIST_TRANSMISSION_COMMAND) - 1);
+    // uart_write_bytes(UART_NUM_1, END_LIST_TRANSMISSION_COMMAND, sizeof(END_LIST_TRANSMISSION_COMMAND) - 1);
+    printf("%s\n", END_LIST_TRANSMISSION_COMMAND);
     // ESP_LOGI(TAG, "Sending string: %s\n", END_LIST_TRANSMISSION_COMMAND);
 
 
@@ -533,7 +543,10 @@ void app_main(void)
 
     while (1) {
         esp_task_wdt_reset();
-        if (button_was_released()) {
+        // if (button_was_released()) {
+        if (timer_count >= 4) {
+            timer_count = 0;
+            // timer_expired = false;
             // Sometimes we get stuff screwy and run out of sockets. When that happens
             // we fully cleanup our http_client and re-init it
             if (!http_client_inited) {
