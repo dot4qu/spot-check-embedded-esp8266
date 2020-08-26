@@ -282,7 +282,8 @@ void loop() {
 
         received_str = "";
       } else if (c == '%') {
-        // Command string
+        // Got a command string, strip the newlines from it
+        received_str.trim();
         if (received_str == "START_LIST") {
           display_str_index = 0;
           building_list = true;
