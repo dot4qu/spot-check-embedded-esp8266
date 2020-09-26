@@ -22,11 +22,16 @@ void init_timer(void *timer_expired_callback) {
     int timer_period_us = TIMER_PERIOD_MS * 1000;
     assert((reload ? ((timer_period_us > 50) ? 1 : 0) : ((timer_period_us > 10) ? 1 : 0)) && (timer_period_us <= 0x199999));
 
-    // If you want to pull the timer back in to test some stuff
-    // and not use it for debouncing, enable it below with correct period
-    // hw_timer_set_load_data(((TIMER_BASE_CLK >> hw_timer_get_clkdiv()) / 1000000) * (TIMER_PERIOD_MS * 1000));
-    // hw_timer_enable(true);
+#if BUTTON_FOR_REQUESTS
+    // Timer will be used for debouncing, make sure you set a short period
+    assert(TIMER_PERIOD_MS < 200);
+    hw_timer_set_load_data(((TIMER_BASE_CLK >> hw_timer_get_clkdiv()) / 1000000) * timer_period_us);
+    hw_timer_enable(true);
+#else
+    // Timer will be used to send requests, make sure you set a long period
+    assert(TIMER_PERIOD_MS > 200);
     reset_timer();
+#endif
 }
 
 void reset_timer() {

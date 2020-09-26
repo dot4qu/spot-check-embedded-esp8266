@@ -35,30 +35,38 @@ int send_json_list(cJSON *list_json) {
 
     // Write our command to signal to the arduino we're about to start
     // sending a list of strings to display
-    // uart_write_bytes(UART_NUM_1, START_LIST_TRANSMISSION_COMMAND, sizeof(START_LIST_TRANSMISSION_COMMAND) - 1);
+#if ESP_01
     printf("%s\n", START_LIST_TRANSMISSION_COMMAND);
+#else
+    uart_write_bytes(UART_NUM_1, START_LIST_TRANSMISSION_COMMAND, sizeof(START_LIST_TRANSMISSION_COMMAND) - 1);
+    ESP_LOGI(TAG, "Sending string: %s\n", START_LIST_TRANSMISSION_COMMAND);
+#endif
 
-    // ESP_LOGI(TAG, "Sending string: %s\n", START_LIST_TRANSMISSION_COMMAND);
     cJSON *data_list_value = NULL;
     cJSON_ArrayForEach(data_list_value, list_json) {
         char *text = cJSON_GetStringValue(data_list_value);
 
-        // ESP_LOGI(TAG, text);
         // Write string and '$' terminator to tell arduino to store everything
         // received so far as a new array element
-        // uart_write_bytes(UART_NUM_1, (const char *)text, strlen(text));
-        // uart_write_bytes(UART_NUM_1, "$", 1);
+#if ESP_01
         printf("%s$\n", text);
-        // ESP_LOGI(TAG, text);
+#else
+        uart_write_bytes(UART_NUM_1, (const char *)text, strlen(text));
+        uart_write_bytes(UART_NUM_1, "$", 1);
+        ESP_LOGI(TAG, text);
+#endif
         cJSON_free(text);
         num_sent++;
     }
 
     // Arduino knows it can stop looking for '$' terminated strings and
     // display what it's stored in its array
-    // uart_write_bytes(UART_NUM_1, END_LIST_TRANSMISSION_COMMAND, sizeof(END_LIST_TRANSMISSION_COMMAND) - 1);
+#if ESP_01
     printf("%s\n", END_LIST_TRANSMISSION_COMMAND);
-    // ESP_LOGI(TAG, "Sending string: %s\n", END_LIST_TRANSMISSION_COMMAND);
+#else
+    uart_write_bytes(UART_NUM_1, END_LIST_TRANSMISSION_COMMAND, sizeof(END_LIST_TRANSMISSION_COMMAND) - 1);
+    ESP_LOGI(TAG, "Sending string: %s\n", END_LIST_TRANSMISSION_COMMAND);
+#endif
 
 
     return num_sent;

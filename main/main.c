@@ -18,17 +18,21 @@
 // Must included below constants.h where we overwite the define of LOG_LOCAL_LEVEL
 #include "esp_log.h"
 
+// For testing on esp, flips tide and swell each request
+volatile bool tides = true;
 
 void timer_expired_callback(void *timer_args) {
-    // timer_expired = true;
-    timer_count += 1;
+    #if ESP_01
+        timer_count += 1;
+    #else
+        timer_expired = true;
+    #endif
 }
 
 void button_isr_handler(void *arg) {
     button_pressed = !(bool)gpio_get_level(GPIO_BUTTON_PIN);
 }
 
-volatile bool tides = true;
 void app_main(void)
 {
     // Create default event loop - handle hidden from user so no return
@@ -42,10 +46,16 @@ void app_main(void)
 
     while (1) {
         esp_task_wdt_reset();
-        // if (button_was_released()) {
-        if (timer_count >= 4) {
+        bool execute_request;
+#if BUTTON_FOR_REQUESTS
+        execute_request = button_was_released();
+#else
+        execute_request = timer_count >= 4;
+#endif
+        if (execute_request) {
             timer_count = 0;
-            // timer_expired = false;
+            timer_expired = false;
+
             // Sometimes stuff gets screwy and run out of sockets. When that happens
             // we fully cleanup our http_client and re-init it
             if (!http_client_inited) {
