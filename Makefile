@@ -7,13 +7,13 @@ PROJECT_NAME := spot-check-embedded
 
 include $(IDF_PATH)/make/project.mk
 
-SUBDIRS += esp-gdbstub
-COMPONENTS_eagle.app.v6 += esp-gdbstub/libesp-gdbstub.a
-CXXFLAGS	+= -mlongcalls
-CFLAGS += -mlongcalls
-C_CXX_FLAGS += -mlongcalls
-LDFLAGS += -mlongcalls
-COMPONENT_LDFLAGS += -mlongcalls
+# SUBDIRS += esp-gdbstub
+# COMPONENTS_eagle.app.v6 += esp-gdbstub/libesp-gdbstub.a
+# CXXFLAGS	+= -mlongcalls
+# CFLAGS += -mlongcalls
+# C_CXX_FLAGS += -mlongcalls
+# LDFLAGS += -mlongcalls
+# COMPONENT_LDFLAGS += -mlongcalls
 
 .PHONY: monitor
 monitor:
