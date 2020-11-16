@@ -236,21 +236,21 @@ void display_text(char* message, int message_length) {
 
 void setup()
 {
-//  Serial.begin(57600);
-//
-//  Serial.print(F("Spot Check Display "));
-//  Serial.println(VERSION);
-//  DEBUG_PRINTLN(F("DEBUG MODE"));
-//  Serial.print(F("Font size    : "));
-//  Serial.print(FONTWIDTH);
-//  Serial.print(F("x"));
-//  Serial.println(FONTHEIGHT);
+ // Serial.begin(57600);
+
+ // Serial.print(F("Spot Check Display "));
+ // Serial.println(VERSION);
+ // DEBUG_PRINTLN(F("DEBUG MODE"));
+ // Serial.print(F("Font size    : "));
+ // Serial.print(FONTWIDTH);
+ // Serial.print(F("x"));
+ // Serial.println(FONTHEIGHT);
 
   strip.begin();
   strip.show();
   delay(200);
 
-  
+
 #if defined(LEDBRIGHTNESS)
   strip.setBrightness(LEDBRIGHTNESS);
 #endif
@@ -268,63 +268,65 @@ void loop() {
   int display_str_index = 0;
   bool building_list = false;
   bool red = true;
-while (1) {
-    String str = "hello";
-    
-    if (red) {
-      red = !red;
-      digitalWrite(4, LOW);
-      digitalWrite(3, HIGH);
-    } else {
-      red = !red;
-      digitalWrite(4, HIGH);
-      digitalWrite(3, LOW);
-    }
-  display_text(str.c_str(), str.length());
-}
-//  while (1) {
-//    if (esp_serial.available()) {
-//      char c = esp_serial.read();
-////      Serial.print(c);
-//      
-//      if (c == '$') {
-//        // Our string terminator, go ahead and display
-//        if (building_list) {
-//          display_strs[display_str_index] = received_str;
-//          display_str_index++;
-//        } else {
-////          Serial.println("Got a '$' terminated string when not in list-building mode");
-//        }
-//
-//        received_str = "";
-//      } else if (c == '%') {
-//        // Got a command string, strip the newlines from it
-//        received_str.trim();
-//        if (received_str == "START_LIST") {
-//          display_str_index = 0;
-//          building_list = true;
-//        } else if (received_str == "END_LIST") {
-//          building_list = false;
-//          display_received_text = true;
-//        } else {
-////          Serial.print("Received unsupported command: ");
-////          Serial.println(received_str);
-//        }
-//
-//        received_str = "";
-//      } else {
-//        received_str += c;
-//      }
-//    }
-//    
-//    if (display_received_text) {
-//      display_received_text = false;
-//      for (int i = 0; i < display_str_index; i++) {
-////        Serial.println(display_strs[i]);
-//        display_text(display_strs[i].c_str(), display_strs[i].length());
-//      }
-//      
-//      received_str = "";
-//    }
-//  }
+
+ while (1) {
+     String str = "hello";
+
+     if (red) {
+       red = !red;
+       digitalWrite(4, LOW);
+       digitalWrite(3, HIGH);
+     } else {
+       red = !red;
+       digitalWrite(4, HIGH);
+       digitalWrite(3, LOW);
+     }
+   display_text(str.c_str(), str.length());
+ }
+
+ while (1) {
+   if (esp_serial.available()) {
+     char c = esp_serial.read();
+//      Serial.print(c);
+
+     if (c == '$') {
+       // Our string terminator, go ahead and display
+       if (building_list) {
+         display_strs[display_str_index] = received_str;
+         display_str_index++;
+       } else {
+//          Serial.println("Got a '$' terminated string when not in list-building mode");
+       }
+
+       received_str = "";
+     } else if (c == '%') {
+       // Got a command string, strip the newlines from it
+       received_str.trim();
+       if (received_str == "START_LIST") {
+         display_str_index = 0;
+         building_list = true;
+       } else if (received_str == "END_LIST") {
+         building_list = false;
+         display_received_text = true;
+       } else {
+//          Serial.print("Received unsupported command: ");
+//          Serial.println(received_str);
+       }
+
+       received_str = "";
+     } else {
+       received_str += c;
+     }
+   }
+
+   if (display_received_text) {
+     display_received_text = false;
+     for (int i = 0; i < display_str_index; i++) {
+//        Serial.println(display_strs[i]);
+       display_text(display_strs[i].c_str(), display_strs[i].length());
+     }
+
+     received_str = "";
+   }
+ }
 }
